@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Kviz iz MLJR – I kolokvijum</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .question-card {
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        .question-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        .answer-option {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .answer-option:hover:not(.disabled) {
+            background-color: #e5e7eb;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .answer-option.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .answer-option.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+        .answer-option.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .answer-option input[type="checkbox"] {
+            margin-right: 1rem;
+            min-width: 1.25rem;
+            min-height: 1.25rem;
+        }
+        .submit-btn {
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+        .submit-btn:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+        }
+        .feedback {
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+        .feedback.correct {
+            color: #065f46;
+        }
+        .feedback.incorrect {
+            color: #991b1b;
+        }
+        .result-container {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .score-text {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .restart-btn {
+            background-color: #6b7280;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .restart-btn:hover {
+            background-color: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-start min-h-screen p-8">
+    <div id="quiz-container" class="container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Kviz iz MLJR – I kolokvijum</h1>
+        
+        <!-- Questions will be dynamically inserted here -->
+
+        <div id="results-section" class="hidden">
+            <div class="result-container">
+                <p class="score-text">Vaš rezultat: <span id="score">0</span> / 137</p>
+                <button id="restart-btn" class="restart-btn">Ponovo pokreni kviz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                "question": "Šta od navedenog nije kadrovska aktivnost?",
+                "options": [
+                    "Revizija",
+                    "Pribavljanje kadrova",
+                    "Nadoknada",
+                    "Vrednovanje zaposlenih"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Tačka dodira kadrovskih aktivnosti između kadrovskog menadžera i drugih menadžera zove se:",
+                "options": [
+                    "Spoj",
+                    "Veza"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Kadrovska aktivnost „Pribavljanje ljudskih resursa“ podrazumeva 3 od navedenih aktivnosti. Označi onu koja to nije:",
+                "options": [
+                    "Selekcija",
+                    "Regrutovanje",
+                    "Vrednovanje",
+                    "Planiranje"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Kadrovska aktivnost „Obrazovanje i razvoj ljudskih resursa“ ne obuhvata:",
+                "options": [
+                    "Istraživanje (radne) prošlosti kandidata",
+                    "Obuku kadrova",
+                    "Orijentaciju kadrova",
+                    "Obrazovanje kadrova"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "U okviru „Nadoknade i Analize poslova i rad. Zadataka“, aktivnost ocenjivanja poslova (job evaluation) određuje:",
+                "options": [
+                    "Relativnu vrednost svakog posla",
+                    "Odnos plata u privatnom i javnom sektoru",
+                    "Konkretnu platu za neko radno mesto"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Održavanje uključuje još neke aktivnosti. Označi onu koja to nije:",
+                "options": [
+                    "Beneficije",
+                    "Kadrovska koordinacija",
+                    "Određivanje alternativnih rasporeda rada"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Odnosima između sindikata i poslodavaca bavi se kadrovska aktivnost:",
+                "options": [
+                    "Sindikatizacija",
+                    "Zastupanje zaposlenih",
+                    "Radni odnosi",
+                    "Kolektivno pregovaranje"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "U svim organizacijama sve kadrovske aktivnosti su jednako zastupljene",
+                "options": [
+                    "T",
+                    "F"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Prema istraživanjima, značaj i broj zastupljenih kadrovskih aktivnosti u organizaciji najčešće ne zavisi od:",
+                "options": [
+                    "Broja akcionara",
+                    "Veličine kompanije",
+                    "Industriji u kojoj posluje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Skup pobuda koje čoveka pokreću na neku aktivnostnaziva se i:",
+                "options": [
+                    "Podsticajnost",
+                    "Motivacija",
+                    "Uzročno posledični motivi"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U teoriji se pored Pogleda na samoaktuelizaciju, izdvajaju još 3 osnovna pogleda na motivaciju. Među njima nije:",
+                "options": [
+                    "Racionalno-ekonomski pogled",
+                    "Socijalni pogled",
+                    "Pogled na samoaktuelizaciju",
+                    "Pragmatični pogled"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Maslov smatra da prosečan čovek ostvaruje potrebu za samoaktuelizacijom u sledećem procentu:",
+                "options": [
+                    "10%",
+                    "20%",
+                    "50%",
+                    "80%"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Dvofaktorsku teoriju radne motivacije, proisteklu iz Maslovljeve razvio je:",
+                "options": [
+                    "Fredrik Hercberg",
+                    "Viktor Vrum",
+                    "Lajmen Porter"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Hercberg je zaključio da u vezi sa zadovoljstvom poslom postoje dve grupe činilaca. Jedni su tzv. Motivatori, a drugi?",
+                "options": [
+                    "Demotivatori",
+                    "Higijenski faktori",
+                    "Satisfakcioni faktori",
+                    "Desatisfakcioni faktori"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U higijenske faktore ne spada:",
+                "options": [
+                    "Uslovi rada",
+                    "Napredovanje",
+                    "Politika preduzeća",
+                    "Međuljudski odnosi"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U motivatore ne spada:",
+                "options": [
+                    "Prepoznavanje i vrednovanje doprinosa",
+                    "Odgovornost",
+                    "Odnos sa nadređenim",
+                    "Napredovanje"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Prema Hercbergu, najjači motivator je:",
+                "options": [
+                    "Postignuće",
+                    "Priroda samog posla",
+                    "Napredovanje",
+                    "Prepoznavanje i vrednovanje nečijeg rada"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Ukoliko je, prema Vrumu, pojedinac indeferentan prema cilju, tj. ne vidi vezu između veće produktivnosti i npr veće zarade",
+                "options": [
+                    "Valenca je 1",
+                    "Valenca je 0",
+                    "Valenca je nepoznata"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Alderferove „egzistencijalne potrebe“ odgovaraju Maslovovim:",
+                "options": [
+                    "Fiziološkim",
+                    "Fiziološkim i potrebama za sigurnošću",
+                    "Potrebama za sigurnošću"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Fokus politika koje se odnose na zdravlje i sigurnost zaposlenih je:",
+                "options": [
+                    "Povećanje ukupne produktivnosti zaposenih",
+                    "Zaština poslodavca i zaposlenih od kršenja relevantnih regulativa",
+                    "Sprečavanje nepotrebnog isplaćivanja osiguranja",
+                    "Bezbedna interakcija između zaposenih i radnog okruženja"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Odgovornost za zdravlje i sigurnost zaposlenih u ogranizaciji je na:",
+                "options": [
+                    "Kadrovskim profesionalcima",
+                    "Nadzornicima",
+                    "Svim menadžerima",
+                    "Sve od navedenog"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Kadrovski specijalisti ili specijalisti za zaštitu na radu pomažu tako što:",
+                "options": [
+                    "Učestvuju u izradi akata u vezi sa zaštitom zdradvlja i sigurnosti zaposlenih",
+                    "Sve od navedenog",
+                    "Ispituju okolnosti zbog kojih dolazi do nesreća na radu",
+                    "Sprovode treninge u vezi sa pitanjima zaštite na radu i zdravlja"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Posebna oblast koja se bavi projektovanjem boljeg radnog okruženja zove se:",
+                "options": [
+                    "Egronomija",
+                    "Ekonomika rada",
+                    "Ergonomika",
+                    "Egronomika"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Dosada i monotonija mogu dovesti do nesreća na radu i povređivanja:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Pored fizičkih bolesti, HR specijalisti mogu uticati još na tri glavna problema u vezi sa zdravljem radnika. To nije:",
+                "options": [
+                    "Alkoholizam",
+                    "Niske plate i nadnice",
+                    "Emocionalne bolesti",
+                    "Zloupotreba droga"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Različinte kompanijske politike pospešuju zdravlje zaposlenih. Koja od navedenih to nije:",
+                "options": [
+                    "Definisanje uslova kolektivnog pregovaranja",
+                    "Obezbeđivanje redovnih sistematskih pregleda",
+                    "Podsticanje zaposlenih na fizičku aktivnost",
+                    "Politike koje ograničavaju/zabranjuju pušenje na radnom mestu"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Skup nespecifičnih reakcija organizma na „ugrožavajuće“ faktove zove se:",
+                "options": [
+                    "Sindrom izgaranja",
+                    "Stres",
+                    "Homeostaza",
+                    "Burnout"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Pored činilaza iz okruženja postoje još tri ključne oblasti koje izazivaju nastanak stresa na radnom mestu. To nisu:",
+                "options": [
+                    "Činioci projektovanja posla",
+                    "Činioci iz ugovora o radu",
+                    "Činioci iz Zakona o radu",
+                    "Međuljudski odnosi"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Alkoholizam je ozbiljan i skup zdravstveni problem. Koji procenat u SAD ima ovaj problem?",
+                "options": [
+                    "10%",
+                    "5%",
+                    "1%",
+                    "15%"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Zdravlje i sigurnost zaposlenih ne iziskuje sistematski program za sprovođenje i praćenje ovih aktivnosti:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Odeljenja za ljudske resurse u svom sastavu mogu da imaju specijalistu za zaštitu na radu:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Zakonodavni ili socijalni ambijent u kome svi članovi društva imaju jednaka prava u procesu zapošljavanja zove se:",
+                "options": [
+                    "Borba protiv diskriminacija",
+                    "Afirmativna radnja",
+                    "Jednake mogućnosti zapošljavanja",
+                    "Demokratija"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Reč diskriminacija potiče od latinske reči discrimino što znači:",
+                "options": [
+                    "Zlostavljanje",
+                    "Povlađivati",
+                    "Ponižavati",
+                    "Praviti razliku"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "U ključne elemente kontrole nad ostvarivanjem jednakih mogućnosti zapošljavanja ne spada:",
+                "options": [
+                    "Informacija",
+                    "Komunikacija",
+                    "Politika",
+                    "Dezinformacija"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Znanja, veštine, sposobnosti i ponašanja koja testiramo u procesu selekcije nazivaju se:",
+                "options": [
+                    "Predskazivači",
+                    "Kriterijumske varijable",
+                    "Validni argumenti",
+                    "Selekcioni standardi"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Da bi se pokazalo da su postupci zapošljavanja validni, koriste se 3 tipa validnosti. Među njima nije:",
+                "options": [
+                    "Validnost u vezi sa kriterijumom",
+                    "Validnost ličnosti raguratera",
+                    "Validnost konstrukcije",
+                    "Validnost sadržaja"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Validnost u vezi sa kriterijumom može biti:",
+                "options": [
+                    "Prediktivna i konkurentna",
+                    "Subjektivna i prediktivna",
+                    "Površna i dubinska",
+                    "Konkurencijska i dvojbena"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Konkurentna validnost predstavlja:",
+                "options": [
+                    "„istovremeni“ pristup validnosti",
+                    "„komparatini“ pristup validnosti",
+                    "„prečinjenični“ pristup validnosti",
+                    "„posledični“ pristup validnosti"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Ako osoba koja se testira radi ono što izkazuje realna situacija na poslu, kažemo da je test:",
+                "options": [
+                    "Konstruktivno validan",
+                    "Realan",
+                    "Sadržajno validan",
+                    "Statistički opravdan"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Da bi se ozbezbedile jednake mogućnosti zapošljavanja, jako su važne 3 stvari. Koja to nije:",
+                "options": [
+                    "Objektivnost",
+                    "Razvijanje postupaka za pritužbe",
+                    "Individulano nagrađivanje",
+                    "Afirmativna radnja"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Postavljanje ciljeva i određivanje koraka koji ce garantovati jednake mogućnosti zapošljavanja zaštićenim grupama kadrova je:",
+                "options": [
+                    "Ostvarivanje objektivnosti",
+                    "Afirmativna radnja",
+                    "Antidiskriminacioni postupak"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Analiza poslova i radnih zadataka je osnovna kadrovksa aktivnost i utvrđuje:",
+                "options": [
+                    "Vrednosti poslova i dodeljuje im plate",
+                    "Šta ljudi rade u okviru svoji poslova i šta im je potrebno za optimalan rad",
+                    "Analizira da li zaposleni dovoljno kvalitetno rade",
+                    "Vrednuje zaposlene dok obavljaju poslove"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Koji su opšti metodi za prikupljanje informacija o poslovima:",
+                "options": [
+                    "Posmatranje, intervju, upitnik i ekspertska porota",
+                    "Izlazni i ulazni intervjui",
+                    "Observacija i analiza",
+                    "Inforamcije iz knjiga i sa interneta"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Analiza poslova služi kao osnova za druge aktivnosti. Među njima nije:",
+                "options": [
+                    "Pisanje opisa poslova i radnih zadataka",
+                    "Vrednovanje posla",
+                    "Pisanje specifikacije poslova i ranih zadataka",
+                    "Employer branding"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Rezime (spisak) zadataka, dužnosti i odgovornosti u poslu zove se:",
+                "options": [
+                    "Specifikacija posla",
+                    "Opis poslova i radnih zadataka",
+                    "Indetifikacija posla",
+                    "Vrednosvanje posla"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Opis poslova i radnih zadataka sadrži tri glavna dela. Među njima nije:",
+                "options": [
+                    "Identifikacija",
+                    "Specifikacija dužnosti",
+                    "Opšti rezime",
+                    "Specifikacija posla"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Specifikacija posla određuje:",
+                "options": [
+                    "Kvalifikacije koje osoba treba da ima da bi mogla da obavlja neki posao",
+                    "Sve specifičnosti koje neki posao obuhvata",
+                    "Specifične zadatke nekog posla",
+                    "Specifičnosti posla u odnosu na druge poslove"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Zahtevi (u smislu potrebnih kvalifikacija) za neki posao mogu biti:",
+                "options": [
+                    "Poželjni i nepoželjni",
+                    "Minimalni i maksimalni",
+                    "Neophodni i željni",
+                    "Osnovni i nužni"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Određivanje vrednosti nekog posla u odnosu na druge poslove, radi pravednog i ozbiljnog sistema nagrađivanja je:",
+                "options": [
+                    "Procenjivanje radnih zadataka",
+                    "Vrednovanje posla",
+                    "Skaliranje posla",
+                    "Poslovna procena"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U specifične metode analize poslova i radnih zadataka spadaju:",
+                "options": [
+                    "Funkcionalna analiza poslova i Upitnik za analizu položaja",
+                    "Skalama divizija i statička observacija",
+                    "Markovijeva i Trevisova analiza",
+                    "Upitink procene i Vrednosne informativne skale"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kada zaposleni koriste opise poslova da ograniče menadžerske fledsibilnosti, kaže se da im navlaće:",
+                "options": [
+                    "Menadžersku „kravatu“",
+                    "Menadžersku „stežući kragnu“",
+                    "Menadžersku „ludačku košulju“",
+                    "Menadžerski „obruč“"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Po kadrovima se podrazumevaju:",
+                "options": [
+                    "Ljudi koji aktivno rade i oni koj se pripremaju za funkciju",
+                    "Ljudi koji imaju bar jedan dan radnog staža",
+                    "Ljudi koji su trenutno zaposleni",
+                    "Zaposleni u jednoj organizaciji"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Pribavljanje kadrova obuhvata tri glaven aktivnosti. Jedna od navedenih je suvišna. Koja?",
+                "options": [
+                    "Vrednovanje kadrova",
+                    "Planiranje kadrova",
+                    "Regrutovanje",
+                    "Selekcija"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Planiranje kadrova je proces:",
+                "options": [
+                    "Analiziranja i procene potreba za kadrovima i njihove raspoloživosti",
+                    "Planiranje načina regrutovanja kadrova za određenu poziciju",
+                    "Procena potrebna za usavršavanje kadrova",
+                    "Stvaranje plana raspodele kadrova po filijalama"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Prva faza u planiranju ljudskih resurasa je:",
+                "options": [
+                    "Prepoznavanje i procena budućih relevantnih spoljnih i unutrašnjih činilaca",
+                    "Razvoj plana kadrova",
+                    "Ispitanje tekućih poslova i vešitan zaposlenih",
+                    "Planiranje karijere"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Za predviđanje budućih, metodi prosuđivanja koriste:",
+                "options": [
+                    "Statističke rezultate anketa",
+                    "Znanje stručnjaka",
+                    "Informacije iz baza podataka o kadrovima",
+                    "Machine learning"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U metode prosuđivanja NE spada:",
+                "options": [
+                    "Predviđanja odozgo nadole",
+                    "Predviđanja odozdo nagore",
+                    "Delfi",
+                    "Vertikalno predviđanje"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Šta nije karakateristično za tehniku Delfi:",
+                "options": [
+                    "Usvaja se mišljenje najubedljivijeg eksperta",
+                    "Eksperti daju svoje mišljenje i argumentuju ga u anonimnim upitnicima",
+                    "Eksperti se ne sreću licem u lice"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "U prednosti Delfi tehnike NE spada:",
+                "options": [
+                    "Kratko traje",
+                    "Smanjuje se mogućnost ličnih sukoba",
+                    "Ekonomična je ako su eksperti raspoređeni na različitim mestima",
+                    "Sprečava se najglasniji član grupe da dominira preocesom odlučivanja"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Matematički metodi predviđanja mogu biti PROSTI I SLOŽENI.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Stopa produktivnosti je:",
+                "options": [
+                    "Prosečan broj jedinica proizvoda po jednom radniku godišnje",
+                    "Procenat porasata produktivnosti prosečnog radnika",
+                    "Stopa napredovanja u proizvodnji po radniku na godišnjem nivou",
+                    "Preosečan broj jedinica proizvoda svih radnika dnevno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Procenat učenja koje se dešava svaki put kada se rezultat udvostruči, zove se:",
+                "options": [
+                    "Indeks progresa",
+                    "Vrhunac krive učenja",
+                    "Referentna stopa produktivnosti",
+                    "Referentna stopa učenja"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Među složene matematičke metode ubrajaju se:",
+                "options": [
+                    "Višestruka regresija i lineatno (ciljno) programiranje",
+                    "Multipla regresija i avax metoda",
+                    "Svi modeli koji analiziraju i ili više kadrovskih činilaca"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "KIS u HR menadžmentu označava:",
+                "options": [
+                    "Kadrovski inforamcioni sistem",
+                    "Kompleksne informatičke sisteme",
+                    "Brigu o zaposlenom",
+                    "Koordinacija inforamcionih sistema"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Za predviđanje interne ponude rada koriste se:",
+                "options": [
+                    "Markovljeva analiza",
+                    "Paunova analiza",
+                    "Bahova analiza"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Osnovu Markovljeve analize čini:",
+                "options": [
+                    "Matrica verovatnoće tranzicije",
+                    "Matrica potencijala transfera",
+                    "Matrica budućih položaja",
+                    "Matrica radnih mesta"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Procenat broja kadrova koji su zaposleni u odnosu na ukupan broj radnog sposobne populacije zove se:",
+                "options": [
+                    "Stopa zaposlenosti",
+                    "Stopa nezaposlenosti",
+                    "Interna ponuda rada",
+                    "Eksterna ponuda rada"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kada je stopa nezaposlenosti visoka i mnogi ljudi su van posla, tržište rada se opisuje kao:",
+                "options": [
+                    "Labavo",
+                    "Jako",
+                    "Slabo",
+                    "Čvrsto"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kod planiranja ljduskih resursa, NE vrši se:",
+                "options": [
+                    "Planiranje dislokacije",
+                    "Planiranje za viškove",
+                    "Planiranje za manjkove",
+                    "Planiranje sukcecije menadžera"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Jasno postavljanje ciljeva karijere i razvijanje svesti o promeni položaja unutar organizacije zove se:",
+                "options": [
+                    "Planiranje kadrova",
+                    "Uzlazni put",
+                    "Unapređenje",
+                    "Spiralna putanja karijere"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Šta je regurtovanje ljudskih resursa?",
+                "options": [
+                    "Proces pronalaženja dovoljnog broja kvalifikovanih kandidata za poslove u organizaciji",
+                    "Analiza budućih potreba ljudskih resursa za organizaciju",
+                    "Proces izbora kandidata koju su radni i voljni za obavljanje posla",
+                    "Izbor najboljnih kandidata za posao od svih prijavljenih"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Koje su dve glavne grupe izvora regrutovanja?",
+                "options": [
+                    "Interni i eksterni izvori",
+                    "Domaći i strani izvori"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Šta NIJE među najčešće rapoloživim internim izvorima?",
+                "options": [
+                    "Bivši zaposleni",
+                    "Kandidati koji se prvi put prijavljuje za posao",
+                    "Sadašnji zaposleni",
+                    "Kandidati koji su se ranije prijavili za posao"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Ako su agencije za zapošljavanje, škole i fakulteti, firme za pružanje usluga eksterni izvori, šta NISU?",
+                "options": [
+                    "Suspendovani zaposleni",
+                    "Konkurencija",
+                    "Mediji",
+                    "Sindikati"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kad se niz položaja u organizaciji popunjava interno, jer jedan za drugim ostaju upražnjeni kako se kadrovi pomeraju, to je:",
+                "options": [
+                    "Efekat talasa",
+                    "Efektivno kadrovsko pomeranje",
+                    "Talasno regrutovanje",
+                    "Interno kadiriranje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Šta od navedenog NIJE alternativa regrutovanju:",
+                "options": [
+                    "Selekcija kadrova",
+                    "Davanje zaposlenog u najam",
+                    "Korišćenje radnika na određeno vreme",
+                    "Čitava funkcija se prepušta drugoj firmi"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Broj kandidata koji su prošli neku fazu procesa selekcije i ušli u sledeću, u odnosu na početnim brojem kandidata u svakoj fazi je:",
+                "options": [
+                    "Proporcija žetve",
+                    "Rcio regurutacije",
+                    "Stepen uspešnosti regrutacije",
+                    "Stopoa odziva"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kad se kompanije ne otkiva već traži od kandidata da pošalju podatke na anonimni poštanski pregradak, zove se:",
+                "options": [
+                    "Slepo oglašavanje",
+                    "Skrivno oglašavnje",
+                    "Pseudo oglašavanje",
+                    "Anonimno oglašavanje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Menadžer koji najčešće donosi konačnu odluku o zapošljavanju zove se:",
+                "options": [
+                    "Menadžer za zapošljavanje",
+                    "HR generalni menadžer",
+                    "HR generalista",
+                    "Specijalista za regrutovanje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Šta od navedenog najčešće NE koristi za ponovno projektovanje poslova i radnih zadataka:",
+                "options": [
+                    "Povećanje posla",
+                    "Promena organizacione strukture",
+                    "Obogaćivanje posla",
+                    "Rotacija posla"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Povećanje broja različitih zadataka koje treba izvršiti zove se:",
+                "options": [
+                    "Povećanje posla",
+                    "Obogaćivanje posla",
+                    "Proširivanje posla",
+                    "Povećanje dubine posla"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Povećanje dubine posla dodatnim odgovornostima za planiranje, ogranizovanje, kontrolu i ocenjivanje, zove se:",
+                "options": [
+                    "Proširivanje posla",
+                    "Produbljivanje posla",
+                    "Obogaćivanje posla",
+                    "Unapređivanje posla"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Radi razbijanja monotonije rutinskog posla, radnici se mogu premestiti za posla na posao. To se zove:",
+                "options": [
+                    "Unapređivanje",
+                    "Rotacija posla",
+                    "Zamena odgovornosti",
+                    "Inverzija usluga"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Smatra se da je pojedinac zadovoljan poslom koji obavlja ako on dovodi do stvaranja 3 „psihološka stanja“. Koji to nije:",
+                "options": [
+                    "Da je posao za njega smislen",
+                    "Da se oseća odgovornim za rezultate svoga rada",
+                    "Da sam ima udeo u projektovanju posla i radnih zadataka",
+                    "Da ima znanje o tome da li su rezultati rada bili zadovoljavajući"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Kada svi zaposleni rade isti broj sati, ali se menja vreme početka i završetka rada, to je:",
+                "options": [
+                    "Fleksibilno radno vreme",
+                    "Prošireno radno vreme",
+                    "Zbijeno radno vreme",
+                    "Okvirno radno vreme"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Mogući oblici (oblik) fleksibinog radnog vremena su (je):",
+                "options": [
+                    "Klizno radno vreme",
+                    "Minifleks sistem i klizno radno vreme",
+                    "Klizino radno vreme i maksifleks sistem",
+                    "Maksifleks sistem i minifleks sistem"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Kada ljudi rade manje od 40 sati nedeljno, to se zove:",
+                "options": [
+                    "Smanjeno radno vreme",
+                    "Skraćeno radno vreme",
+                    "Zbijeno radno vreme",
+                    "Idelana posao"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Kada 2 zaposlena sa skrećenim radnim vremenom dele jedan posao koji zahteva puno radno vreme, to se zove:",
+                "options": [
+                    "Deljenje rada",
+                    "Podela posla",
+                    "Deljenje položaja",
+                    "Deljenje posla"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Za sprečavanje otpuštanja nekada se smanjuje broj radnih sati svakog zaposlenog. To se zove:",
+                "options": [
+                    "Deljenje rada",
+                    "Deljenje posla",
+                    "Zbijeni radni sati",
+                    "Podela posla"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Mala grupa zaposlenih koje se redovno sastaju i raspravljaju o poboljšanju produktinosti i smanjenju troškova, zove se:",
+                "options": [
+                    "Krugovi kvaliteta",
+                    "Fokus centri",
+                    "Grupe kvaliteta",
+                    "Fokus grupe"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Pristupi organizacionom razvoju su samo usmereni na ljude, ne i na tehnologiju.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Kada se čitav posao obavi za manje od dana, zove se:",
+                "options": [
+                    "Zbijene radne nedelje",
+                    "Klizne nedelje",
+                    "Zgusnute radne nedelje",
+                    "Sažete radne nedelje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Otpori promenama u organizaciji se javljaju, zbog različitih razloga. Među njima obično nisu:",
+                "options": [
+                    "Ekonomski gubitak, gubitak statusa",
+                    "Neizvesnost i neugodnost",
+                    "Interpersonalini poremećaj",
+                    "Sindikalizacija"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Kod fleksibilnog radnog vremena, vreme kad svi zaposleni moraju da budu prisutni se zove:",
+                "options": [
+                    "Centralno radno vreme",
+                    "Obavezno vreme",
+                    "Središnje vreme",
+                    "Srednje vreme"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kod fleksibilnog radnog vremena, ukupan raspon mogućih radnih sati se zove:",
+                "options": [
+                    "Centalno vreme",
+                    "Okvirno vreme",
+                    "Sveukupno vreme",
+                    "Ukupno vreme"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "U alternativne rasporede rada NE spada:",
+                "options": [
+                    "Fleksibilno radno vreme",
+                    "Zbijene radne nedelje",
+                    "Skrećeno radno vreme",
+                    "Osmočasovna, petodnevna radna nedelja"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Prilikom projektovanja posla i radnih zadataka NE uzima se u obzir:",
+                "options": [
+                    "Profesionalizam",
+                    "Fizički uslovi rada",
+                    "Tip ličnosti koji vrši određeni posao",
+                    "Grupno napram invidualnog projektovanja"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "U „mehanizme koordinacije“ NE spadaju:",
+                "options": [
+                    "Kadrovske politike",
+                    "Procedura i pravila",
+                    "Disciplina i formalna komunikacija",
+                    "Kolektivno pregovaranje"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Mehanizmi koordinacije koji se definišu kao „uobičajeni metodi obavljanja određenih aktivnosti“ su:",
+                "options": [
+                    "Procedure",
+                    "Politike",
+                    "Pravila",
+                    "Disciplina"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Na disciplinu se gleda na dva načina, koja:",
+                "options": [
+                    "Stimulativno i destimulativno",
+                    "Blago i rigidno",
+                    "Preventivno i kazneno",
+                    "Motivaciono i demotivaciono"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Kada zaposleni dobije priliku da ispravi ponašanje kroz niz disciplinskih mera (opomena, ukor,....,otkaz) to se zove:",
+                "options": [
+                    "Progresivan disciplina",
+                    "Sistematska disciplina",
+                    "Regresivna disciplina",
+                    "Postepeno kažnjavanje"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Etično ponašanje zaposlenih u ogranizaciji se podstiče nizom mehanizama. Koji od navedenih to nije (nisu):",
+                "options": [
+                    "Orejentacija za novozaposlene",
+                    "Strukturisanje stavova prilikom pregovaranja",
+                    "Trening zaposlenih (etički trening)",
+                    "Etički kodeksi i disciplinski sistem"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Različiti su vidovi internih publikacija u kompaniji. U njima ne spadaju:",
+                "options": [
+                    "Cirkularni mejlovi",
+                    "Novine",
+                    "Vesti",
+                    "Magazini"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Ombudsman je:",
+                "options": [
+                    "Osoba koja je izvan lanca naređivanja i često služi kao branilac zaposlenih",
+                    "Osoba koja je deo top menadžmenta zaokružena za rešavanje pritužbi zaposlenih",
+                    "Je pravni akt koji štiti zaposlene od mobinga"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Priručnici za zaposlene mogu dati informacije zaposlenima o:",
+                "options": [
+                    "Politikama, procedurama i pravilima",
+                    "Politikama i pravilima",
+                    "Politikama i procedurama",
+                    "Procedurama i pravilima"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "U formalne oblike prenošenja informacija ne spadaju:",
+                "options": [
+                    "„Happy Friday“ i slični događaji koji okupljaju zaposlene",
+                    "Priručnici za zaposlene i kutije za predloge",
+                    "Odbori za komunikaciju, ombudsmani",
+                    "Politika otvorenih vrata i interne publikacije"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Koji to mehanizam omogućuje protok informacija u svim pravcima kroz organizaciju:",
+                "options": [
+                    "Neformalna komunikacija",
+                    "Formalna komunikacija",
+                    "Stalni sastanci svih zaposlenih",
+                    "Kompanijski intranet"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Šta od navedenog NE moraju biti efektivne politike:",
+                "options": [
+                    "Po volji svakog zaposlenog u organizaciji",
+                    "Razumne i razumljive",
+                    "Primenjive i pogodne za komunikaciju (obzananjene)",
+                    "Konzistentne i neophodne"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Mehanizmi koordinacije koji se definišu kao „oblik treninga za primenu ogranizacionih pravila“ je:",
+                "options": [
+                    "Politika",
+                    "Disciplina",
+                    "Procedura",
+                    "Formalna komunikacija"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Pravila su specifičnija od procedura:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Mehanizmi koordinacije, koji „bliže određuju radnju koju treba preduzeti u pojedinačnoj situaciji“ i imaju životni ciklus su:",
+                "options": [
+                    "Procedura",
+                    "Politike",
+                    "Pravila",
+                    "Disciplina"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Jednom ustanovljene organizacione politike i procedure ne mogu se menjati.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Kadrovske politike mogu biti nametnute i spoljnim okolnostima i zakonom.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Najopštiji mehanizmi koordinacije koje služe kao vodiči i smernice za odabiranje pravog puta postupanja članova org. su:",
+                "options": [
+                    "Kadrovske politike",
+                    "Procedure",
+                    "Pravila",
+                    "Formalna komunikacija"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Odgovornost za koordinaciju kadrovksih aktivnosti ima pre svega:",
+                "options": [
+                    "Kadrovsko odeljenje i top menadžment",
+                    "Kadrovsko odeljenje i linijski menadžment",
+                    "Kadrovsko odeljenje",
+                    "Svi zaposleni u organizaciji"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Koliko ima tipičnih „mehanizma koordinacije“ kadrovksih aktivnosti?",
+                "options": [
+                    "2 (dve)",
+                    "5 (pet)",
+                    "3 (tri)",
+                    "7 (sedam)"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Koordinacija se može definisati kao:",
+                "options": [
+                    "Harmonično odvijanje kadovskih aktivnosti",
+                    "Ujednačavanje pravila ponašanja u ogranizaciji",
+                    "Koordinacija pozicija unutar HR sektora",
+                    "Kao koordinacija svih položaja u organizaciji"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Vođstvo mora da bude u vezi sa formalnim autoritetom:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Među poželjne osobine vođe u glavnom NE spada(ju):",
+                "options": [
+                    "Samopouzdanje",
+                    "Neizvesnost i inventivnost",
+                    "Genijalnost",
+                    "„Pogledi iz helikoptera“"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Autokratski stil vođstva ne podrazumeva da vođa sam odlučuje, kontroliše, nagrađuje/kažnjava.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Vođstvo je činjenje pravih stvari u vezi sa vizijom i usmeravanjem, a menadžment činjenje stvari na pravi način (pimena).",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Efektivnost (uspeh) vođenja odnosi se na izvršenje koje dovodi do tri stvari. Među njima obično NIJE:",
+                "options": [
+                    "Ostvarivanje organizacionih ciljeva",
+                    "Visko stepen posvećenosti ovim ciljevima od strane grupa",
+                    "Visoka proporcija žetve",
+                    "Visok nivo zadovoljstva članova grupe"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Kontigentni pristup kaže da je efektivnost vođe neretko situaciono uslovljena i često zavisi od tri stvari. Tu ne spadaju:",
+                "options": [
+                    "Ukupni radni staž vođe",
+                    "Veličina organizacije",
+                    "Odnosi vođe prema sledbenicima",
+                    "Priroda zadataka"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Predstavnik kontigentnog pristupa, Fred Fidler, kaže da efektivnost vođe zavisi od:",
+                "options": [
+                    "Stila vođenja i povoljnosti situacija",
+                    "Osobina ličnosti vođe",
+                    "Stila voššenja kome je bilo ranije izlošen sam vođa",
+                    "Šireg prenošenja vođe"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Filder kaže da povoljnost situacije zavisi od tri ključne varijacije. Među njima NIJE:",
+                "options": [
+                    "Reputacija organizacije",
+                    "Odnosi vođe i članova grupe",
+                    "Položaj moći",
+                    "Struktura zadataka"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Redni razlikuje tri vrste efektivnosti, kada je reč o menadžerskoj efektivnosti. Među njima NIJE:",
+                "options": [
+                    "Prividna efektivnost",
+                    "Lična efektvnost",
+                    "Zamagljena efektivnost",
+                    "Efektivnost vođe"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Likert razlikuje 4 kategorije stilova vođenja. Jedan stil se zove „Participativan“ i pored njega postoje još 3. Koji NIJE:",
+                "options": [
+                    "Razmatrački",
+                    "Benevolentno-autokratski",
+                    "Izrabljivačko-autokratski",
+                    "Konsultativan"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Šajn u svojoj definiciji određuje grupu kao, „bilo koji broj koji su (izaberi šta NE spada u njegov opis grupe):",
+                "options": [
+                    "Psihološki su svesni jedni drugih",
+                    "U interakciji jedni sa drugima",
+                    "Opažaju sebe kao grupu",
+                    "Prilično se cene i poštuju"
+                ],
+                "correctAnswers": [
+                    3
+                ]
+            },
+            {
+                "question": "Po kvalifikacijama članova i nivou interakcije, izdvajaju se 4 tipa radne grupe, „Apatična“ i još tri. Među njima NIJE:",
+                "options": [
+                    "Dubinska",
+                    "Strategijska",
+                    "Nepouzdana",
+                    "Konzervativna"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Među članovima koji podstiču kohezivnost grupe NE spadaju:",
+                "options": [
+                    "Fizička bilizina i sličnost poslova, kao i zajedničke osobine članstva",
+                    "Veličina grupa i struktura zadataka",
+                    "Visina plate i postojanje razlika u istim",
+                    "Spoljne pretnje, izvesnost nagrada, stil vođenja"
+                ],
+                "correctAnswers": [
+                    2
+                ]
+            },
+            {
+                "question": "Proces komunikacije čini pet elemenata. Pošiljalac poruke, poruka i još tri. Među njima NIJE:",
+                "options": [
+                    "Ometajući faktor",
+                    "Povretna veza",
+                    "Primalac poruke",
+                    "Medijum"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Tokovi komunikacije koja se odvija licem u lice i u grupi označeni su kao Interpersonalne komunikacije.",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Džohari prozorom se predstavljaju različite kombinacije znanja i neznanja informacija:",
+                "options": [
+                    "Tačno",
+                    "Netačno"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Ukoliko je celokupna informacija poznata i pošiljaocu poruke (nama) i primaocu, u Džoharijevom prozoru se ta oblast zove:",
+                "options": [
+                    "Arena",
+                    "Fasada",
+                    "Slepa mrlja",
+                    "Nepoznato"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Tri su česte vrste prekida u efektivnoj komunikaciji. U njima NE spadaju:",
+                "options": [
+                    "Sematičke prepreke",
+                    "Neformalne prepreke",
+                    "Tehničke prepreke",
+                    "Perceptivne prepreke"
+                ],
+                "correctAnswers": [
+                    1
+                ]
+            },
+            {
+                "question": "Pored buke i statsunih razlika u tehničke prepreke u komunikaciji spada još tri stvari. Među njima NIJE:",
+                "options": [
+                    "Empatija",
+                    "Statusne razlike",
+                    "Filtriranje informacija",
+                    "Kratki stoj"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            },
+            {
+                "question": "Kada je stopa nezaposlenosti niska i malo ljudi su van posla, tržište rada se opisuje kao:",
+                "options": [
+                    "Čvrsto",
+                    "Jako",
+                    "Slabo",
+                    "Meko"
+                ],
+                "correctAnswers": [
+                    0
+                ]
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let submitted = false;
+
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsSection = document.getElementById('results-section');
+        const scoreSpan = document.getElementById('score');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const renderQuiz = () => {
+            quizContainer.innerHTML = `<h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Kviz iz MLJR – I kolokvijum</h1>`;
+            questions.forEach((q, index) => {
+                const questionCard = document.createElement('div');
+                questionCard.className = 'question-card';
+                questionCard.innerHTML = `
+                    <p class="question-title">${index + 1}. ${q.question}</p>
+                    <div class="options-container">
+                        ${q.options.map((option, optIndex) => `
+                            <label class="answer-option rounded-lg p-4 cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+                                <input type="checkbox" name="question-${index}" value="${optIndex}" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="ml-3 text-gray-700">${option}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                quizContainer.appendChild(questionCard);
+            });
+
+            const submitBtn = document.createElement('button');
+            submitBtn.id = 'submit-btn';
+            submitBtn.className = 'submit-btn';
+            submitBtn.textContent = 'Proveri odgovore';
+            submitBtn.addEventListener('click', checkAnswers);
+            quizContainer.appendChild(submitBtn);
+
+            resultsSection.classList.add('hidden');
+            quizContainer.appendChild(resultsSection);
+        };
+
+        const checkAnswers = () => {
+            score = 0;
+            questions.forEach((q, index) => {
+                const questionCard = document.querySelectorAll('.question-card')[index];
+                const selectedOptions = Array.from(questionCard.querySelectorAll(`input[name="question-${index}"]:checked`));
+                const selectedValues = selectedOptions.map(input => parseInt(input.value));
+
+                const isCorrect = selectedValues.length === q.correctAnswers.length &&
+                                  selectedValues.every(val => q.correctAnswers.includes(val)) &&
+                                  q.correctAnswers.every(val => selectedValues.includes(val));
+
+                if (isCorrect) {
+                    score++;
+                }
+
+                // Apply styles to show correct/incorrect answers
+                questionCard.querySelectorAll('.answer-option').forEach((label, optIndex) => {
+                    const input = label.querySelector('input');
+                    input.disabled = true;
+                    if (q.correctAnswers.includes(optIndex)) {
+                        label.classList.add('correct');
+                    }
+                    if (selectedValues.includes(optIndex) && !q.correctAnswers.includes(optIndex)) {
+                        label.classList.add('incorrect');
+                    }
+                });
+            });
+
+            document.getElementById('submit-btn').style.display = 'none';
+            scoreSpan.textContent = score;
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        restartBtn.addEventListener('click', () => {
+            renderQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        document.addEventListener('DOMContentLoaded', renderQuiz);
+    </script>
+</body>
+</html>
